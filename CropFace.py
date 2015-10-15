@@ -3,6 +3,8 @@ __author__ = 'anton'
 #!/usr/bin/env python
 
 import sys, math
+import cv2
+import numpy as np
 from PIL import Image
 
 
@@ -25,11 +27,10 @@ def ScaleRotateTranslate(image, angle, center=None, new_center=None, scale=None,
     sine = math.sin(angle)
     a = cosine / sx
     b = sine / sx
-    c = x - nx * a - ny * b
-    d = -sine / sy
-    e = cosine / sy
-    f = y - nx * d - ny * e
-    return image.transform(image.size, Image.AFFINE, (a, b, c, d, e, f), resample=resample)
+    c = (1 - a) * nx - b * ny
+    d = b * nx + (1 - a) * ny
+    M = np.float32([[a,b,c],[-b,a,d]])
+    return cv2.warpAffine(image, M, (image.shape[0],image.shape[1]))
 
 
 def CropFace(image, eye_left=(0, 0), eye_right=(0, 0), offset_pct=(0.2, 0.2), dest_sz=(70, 70)):
@@ -39,7 +40,7 @@ def CropFace(image, eye_left=(0, 0), eye_right=(0, 0), offset_pct=(0.2, 0.2), de
     # get the direction
     eye_direction = (eye_right[0] - eye_left[0], eye_right[1] - eye_left[1])
     # calc rotation angle in radians
-    rotation = -math.atan2(float(eye_direction[1]), float(eye_direction[0]))
+    rotation = math.atan2(float(eye_direction[1]), float(eye_direction[0]))
     # distance between them
     dist = Distance(eye_left, eye_right)
     # calculate the reference eye-width
@@ -51,10 +52,9 @@ def CropFace(image, eye_left=(0, 0), eye_right=(0, 0), offset_pct=(0.2, 0.2), de
     # crop the rotated image
     crop_xy = (eye_left[0] - scale * offset_h, eye_left[1] - scale * offset_v)
     crop_size = (dest_sz[0] * scale, dest_sz[1] * scale)
-    image = image.crop(
-        (int(crop_xy[0]), int(crop_xy[1]), int(crop_xy[0] + crop_size[0]), int(crop_xy[1] + crop_size[1])))
+    image = image[int(crop_xy[1]):int(crop_xy[1] + crop_size[1]), int(crop_xy[0]):int(crop_xy[0] + crop_size[0])]
     # resize it
-    image = image.resize(dest_sz, Image.ANTIALIAS)
+    image = cv2.resize(image,dest_sz)
     return image
 
 

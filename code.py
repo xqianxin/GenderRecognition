@@ -1,22 +1,22 @@
 import cv2 as cv
 from numpy import *
 import csv
+import os
 
-ABS_PATH = "/Users/anton/OpenCVS/GenderRecognition/image"
+ABS_PATH = "./image"
 
 def readCSVFile(filePath):
     images = []
     labels = []
-    myfile = open(filePath, 'rt')
+    myfile = open(filePath).readlines()
     try:
-        reader = csv.reader(myfile)
-        for row in reader:
-            val = str(row[0]).split(";")
+        for row in myfile:
+            val = row.strip().split(";")
             images.append(val[0])
-            if val[1] not in labels:
-                labels.append(int(val[1]))
+            labels.append(int(val[1]))
     finally:
         pass
+    print 'in read csv file, (imgs,labels): ',(images,labels)    
     return (images, labels)
 
 class GenderRecognizer:
@@ -33,9 +33,10 @@ class GenderRecognizer:
         images = []
         for image in data[0]:
             matImg = self.readImage(image)
-            print(matImg)
+            print 'reading: ', (matImg)
             images.append(matImg)
         labels = data[1]
+        print 'in det date, (imgs, labels):',(images, labels)
         return(images, labels)
 
     def trainingModel(self):
@@ -46,9 +47,8 @@ class GenderRecognizer:
         self.model.train(array(data[0]), array(data[1]))
         print("Training over")
 
-    def getGender(self, imagePath):
+    def getGender(self, testSample):
         print("getGender")
-        testSample = self.readImage(imagePath)
         predictedLabel = self.model.predict(testSample)
         print(predictedLabel)
         return predictedLabel

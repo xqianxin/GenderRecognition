@@ -2,7 +2,6 @@ import cv2
 import sys
 from CropFace import CropFace
 from code import GenderRecognizer
-from PIL import Image
 
 cascPath = sys.argv[1]
 faceCascade = cv2.CascadeClassifier(cascPath)
@@ -20,9 +19,7 @@ faces = ()
 while True:
     # Capture frame-by-frame
     ret, frame = video_capture.read()
-
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
     faces = faceCascade.detectMultiScale(
         gray,
         scaleFactor=1.1,
@@ -30,11 +27,9 @@ while True:
         minSize=(30, 30),
         flags=cv2.cv.CV_HAAR_SCALE_IMAGE
     )
-
     # Draw a rectangle around the faces
     for (x, y, w, h) in faces:
-        img = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        
+        #img = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         #Detect eyes
         roi_gray = gray[y : y + h, x : x + w]
         roi_color = frame[y : y + h, x : x + w]
@@ -56,28 +51,20 @@ while True:
             
             print "Face and Eye detected"
             isDetect = True
-
+        if isDetect:
+            img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            img = CropFace(img, eye_left, eye_right, offset_pct=(0.3, 0.3), dest_sz=(200, 200))
+            if genderRecognizer.getGender(img)[0] == 0:
+                color = (0,0,255)
+                print "Man"
+            else:
+                color = (255,0,0)
+                #print "Woman"
+            img = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)    
     # Display the resulting frame
     cv2.imshow('Video', frame)
 
-    if (cv2.waitKey(1) & 0xFF == ord('q')) or isDetect:
+    if (cv2.waitKey(1) & 0xFF == ord('q')):
         break
-
-cv2.imwrite( "1.jpg", frame)
-print(eye_left)
-print(eye_right)
-image = Image.open("1.jpg")
-CropFace(image, eye_left, eye_right, offset_pct=(0.3, 0.3), dest_sz=(200, 200)).save("01.jpg")
-
-if genderRecognizer.getGender("01.jpg")[0] == 0:
-    print "Man"
-else:
-    print "Woman"
-
-#Use to capture image on screen
-while True:
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
 video_capture.release()
 cv2.destroyAllWindows()
